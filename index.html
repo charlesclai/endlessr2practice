@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Endless Audio Trivia</title>
+    <!-- Tailwind CSS for structural layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for pub-style iconography -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Custom Pale Yellow Pub Palette Overrides */
+        body {
+            background-color: #FEFDF0; /* Soft pale yellow cream background */
+            color: #2D2A1E; /* Dark slate-brown typography for crisp contrast */
+        }
+        .pub-card {
+            background: #FFFDEB; /* Light pale yellow card */
+            border: 1px solid #EFE9B0; /* Delicate warm yellow border */
+        }
+        .brand-gold-text {
+            color: #C09918; /* Saturated gold contrast tone */
+        }
+        .brand-gold-bg {
+            background-color: #F8E665; /* Vibrant signature pale yellow */
+        }
+        /* Focus styles for clean accessibility */
+        .pub-input:focus {
+            outline: none;
+            border-color: #C09918;
+            box-shadow: 0 0 0 2px rgba(192, 153, 24, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-[#F8E665] selection:text-slate-900">
+
+    <!-- NAVIGATION HEADER -->
+    <header class="border-b border-[#EFE9B0] bg-[#FFFDEB]/90 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="h-9 w-9 rounded-xl brand-gold-bg flex items-center justify-center shadow-md shadow-[#F8E665]/20">
+                    <i class="fas fa-beer-mugs-invert text-slate-900 text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-black tracking-tight text-slate-900 uppercase">Charles's Geeks Who Drink</h1>
+                    <p class="text-[10px] text-amber-700 font-bold tracking-widest uppercase -mt-1">Endless Practice Mode</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN GAME CONTAINER -->
+    <main class="flex-grow flex items-center justify-center px-4 py-8">
+        <div class="w-full max-w-xl">
+            
+            <!-- QUIZ RUNTIME VIEW -->
+            <div class="pub-card rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden backdrop-blur-md">
+                
+                <!-- AUDIO CONTROLS & HUD -->
+                <div class="flex flex-col items-center text-center space-y-5 pb-6 border-b border-[#EFE9B0]">
+                    <button id="play-btn" disabled class="h-20 w-20 rounded-full brand-gold-bg flex items-center justify-center transition-all duration-300 transform active:scale-95 disabled:opacity-30 disabled:pointer-events-none group shadow-lg shadow-[#F8E665]/20 hover:shadow-[#F8E665]/40">
+                        <i id="play-icon" class="fas fa-spinner fa-spin text-slate-900 text-2xl"></i>
+                    </button>
+                    
+                    <div class="space-y-1">
+                        <span id="play-limit-lbl" class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            Loading stream assets...
+                        </span>
+                        <div id="timer-display" class="hidden text-sm font-black brand-gold-text tabular-nums tracking-wide"></div>
+                    </div>
+
+                    <!-- Progress Bar Wrapper -->
+                    <div id="progress-container" class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden opacity-0 transition-opacity duration-300">
+                        <div id="progress-bar" class="h-full brand-gold-bg transition-all duration-100 ease-linear" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- INPUT FIELDS FORM -->
+                <div class="space-y-5 pt-6">
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider block" for="input-artist">Artist / Band Name</label>
+                        <input id="input-artist" autocomplete="off" type="text" placeholder="Who sings this track?" 
+                               class="pub-input w-full px-4 py-3 bg-white border border-[#EFE9B0] rounded-xl text-slate-900 placeholder-slate-400 transition-colors duration-200">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider block" for="input-title">Song Title</label>
+                        <input id="input-title" autocomplete="off" type="text" placeholder="What is the name of the song?" 
+                               class="pub-input w-full px-4 py-3 bg-white border border-[#EFE9B0] rounded-xl text-slate-900 placeholder-slate-400 transition-colors duration-200">
+                    </div>
+                </div>
+
+                <!-- INSTANT FEEDBACK BREAKDOWN DRAWER -->
+                <div id="feedback-drawer" class="hidden mt-6 pt-5 border-t border-[#EFE9B0] space-y-3">
+                    <!-- Dynamic evaluation blocks print here -->
+                </div>
+
+                <!-- NAVIGATION / SUBMISSION CONTROLLER FOOTER -->
+                <div class="flex items-center justify-end gap-4 pt-6 mt-6 border-t border-[#EFE9B0]">
+                    <!-- Separate action buttons to prevent click bubbling/mismatches -->
+                    <button id="submit-btn" disabled class="px-6 py-3 rounded-xl bg-amber-600 text-white font-black text-xs uppercase tracking-wider flex items-center space-x-2 transition-all hover:bg-amber-500 shadow-lg shadow-amber-600/10 disabled:opacity-40 disabled:pointer-events-none">
+                        <span>Submit Answer</span>
+                        <i class="fas fa-check-circle text-xs"></i>
+                    </button>
+                    <button id="next-btn" class="hidden px-6 py-3 rounded-xl bg-slate-800 text-white font-black text-xs uppercase tracking-wider flex items-center space-x-2 transition-all hover:bg-slate-700 shadow-lg shadow-slate-900/10">
+                        <span>Next Song</span>
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- HIDDEN HTML5 AUDIO PRELOADER NODE -->
+    <audio id="audio-player" crossorigin="anonymous" class="hidden"></audio>
+
+    <!-- PLATFORM JAVASCRIPT LOGIC MOTOR -->
+    <script>
+        // --- 1. STATE MANAGEMENT ---
+        let currentSong = null;
+        let isPlaying = false;
+        let playCount = 0;
+        let playbackInterval = null;
+
+        let artistHistoryQueue = [];
+        const HISTORY_LIMIT = 20; 
+
+        let audioCtx = null;
+        let analyser = null;
+        let source = null;
+
+        const eliteTriviaPool = [
+            'Queen', 'Michael Jackson', 'ABBA', 'The Beatles', 'Fleetwood Mac', 
+            'Bon Jovi', 'Journey', 'Whitney Houston', 'Madonna', 'Britney Spears', 
+            'Backstreet Boys', 'Beyonce', 'Eminem', 'Outkast', 'Coldplay', 
+            'The Killers', 'Green Day', 'Linkin Park', 'Taylor Swift', 'Bruno Mars', 
+            'Rihanna', 'Adele', 'Katy Perry', 'Ed Sheeran', 'Maroon 5', 
+            'Justin Timberlake', 'Lady Gaga', 'Elton John', 'Billy Joel', 'Prince', 
+            'David Bowie', 'Bruce Springsteen', 'Nirvana', 'Foo Fighters', 'U2', 
+            'Red Hot Chili Peppers', 'No Doubt', 'Guns N Roses', 'Aerosmith', 'ACDC', 
+            'Led Zeppelin', 'Pink Floyd', 'Stevie Wonder', 'Earth Wind and Fire', 'Bee Gees', 
+            'Daft Punk', 'Gorillaz', 'Radiohead', 'Oasis', 'R.E.M.', 
+            'The Cranberries', 'Alanis Morissette', 'Shania Twain', 'Celine Dion', 'Mariah Carey', 
+            'Destinys Child', 'TLC', 'Usher', 'Jay-Z', 'Kanye West', 
+            'Justin Bieber', 'Drake', 'The Weeknd', 'Billie Eilish', 'Dua Lipa', 
+            'Olivia Rodrigo', 'Harry Styles', 'Post Malone', 'Imagine Dragons', 'Panic At The Disco'
+        ];
+
+        // --- 2. DOM ELEMENT CACHE ---
+        const audioPlayer = document.getElementById('audio-player');
+        const playBtn = document.getElementById('play-btn');
+        const playIcon = document.getElementById('play-icon');
+        const playLimitLbl = document.getElementById('play-limit-lbl');
+        const timerDisplay = document.getElementById('timer-display');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const inputTitle = document.getElementById('input-title');
+        const inputArtist = document.getElementById('input-artist');
+        const submitBtn = document.getElementById('submit-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const feedbackDrawer = document.getElementById('feedback-drawer');
+
+        // --- 3. ENDLESS STREAM DISCOVERY PARSER ---
+        function loadNextEndlessTrack() {
+            stopPlaybackSimulation();
+            
+            // Reset input form elements
+            inputTitle.value = "";
+            inputArtist.value = "";
+            inputTitle.disabled = false;
+            inputArtist.disabled = false;
+            
+            // Reset state toggles
+            feedbackDrawer.classList.add('hidden');
+            feedbackDrawer.innerHTML = "";
+            
+            playBtn.disabled = true;
+            playIcon.className = "fas fa-spinner fa-spin text-slate-900 text-2xl";
+            playLimitLbl.innerText = "Sourcing fresh track asset...";
+            
+            // Visibility setups
+            submitBtn.classList.remove('hidden');
+            submitBtn.disabled = true;
+            nextBtn.classList.add('hidden');
+            
+            playCount = 0;
+
+            let viablePool = eliteTriviaPool.filter(a => !artistHistoryQueue.includes(a));
+            if (viablePool.length === 0) {
+                artistHistoryQueue = []; 
+                viablePool = [...eliteTriviaPool];
+            }
+            
+            const selectedArtist = viablePool[Math.floor(Math.random() * viablePool.length)];
+            
+            artistHistoryQueue.push(selectedArtist);
+            if (artistHistoryQueue.length > HISTORY_LIMIT) {
+                artistHistoryQueue.shift();
+            }
+
+            const scriptId = `jsonp_${Date.now()}`;
+            window[scriptId] = function(data) {
+                if (data && data.results && data.results.length > 0) {
+                    const tracksWithPreviews = data.results.filter(t => 
+                        t.previewUrl && 
+                        !t.trackName.toLowerCase().includes('remix') &&
+                        !t.trackName.toLowerCase().includes('live')
+                    );
+
+                    if (tracksWithPreviews.length > 0) {
+                        const selection = tracksWithPreviews[Math.floor(Math.random() * tracksWithPreviews.length)];
+                        currentSong = {
+                            correctTitles: [selection.trackName],
+                            correctArtists: [selection.artistName],
+                            audioUrl: selection.previewUrl
+                        };
+                        
+                        audioPlayer.src = currentSong.audioUrl;
+                        audioPlayer.load();
+                        updatePlayButtonUI();
+                        submitBtn.disabled = false;
+                    } else {
+                        loadNextEndlessTrack();
+                    }
+                } else {
+                    loadNextEndlessTrack();
+                }
+                
+                const tag = document.getElementById(scriptId);
+                if (tag) tag.remove();
+                delete window[scriptId];
+            };
+
+            const script = document.createElement('script');
+            script.id = scriptId;
+            script.src = `https://itunes.apple.com/search?term=${encodeURIComponent(selectedArtist)}&entity=song&limit=5&lang=en_us&country=US&callback=${scriptId}`;
+            script.onerror = () => loadNextEndlessTrack();
+            document.head.appendChild(script);
+        }
+
+        // --- 4. ADVANCED TRIVIA GRADING PARSER ---
+        function cleanString(str) {
+            if (!str) return "";
+            return str
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "") 
+                .replace(/\[.*?\]/g, "") 
+                .toLowerCase()
+                .replace(/in\b/g, "ing") 
+                .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()"'’]/g, "") 
+                .replace(/\s+/g, " ")                             
+                .trim();
+        }
+
+        function stripLeadingArticles(str) {
+            let cleaned = cleanString(str);
+            return cleaned.replace(/^(the\s|a\s|an\s)/, "").trim();
+        }
+
+        function getLevenshteinDistance(a, b) {
+            const matrix = [];
+            for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+            for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+                    }
+                }
+            }
+            return matrix[b.length][a.length];
+        }
+
+        function isFuzzyMatch(str1, str2) {
+            const clean1 = stripLeadingArticles(str1);
+            const clean2 = stripLeadingArticles(str2);
+            if (!clean1 || !clean2) return false;
+            if (clean1 === clean2) return true;
+
+            const maxLen = Math.max(clean1.length, clean2.length);
+            let allowedDistance = 1;
+            if (maxLen > 12) allowedDistance = 3;
+            else if (maxLen > 6) allowedDistance = 2;
+
+            return getLevenshteinDistance(clean1, clean2) <= allowedDistance;
+        }
+
+        function gradeTitle(userInput, correctTitles) {
+            if (!userInput) return false;
+            for (let title of correctTitles) {
+                if (isFuzzyMatch(userInput, title)) return true;
+                const outsideParentheses = title.replace(/\(.*?\)/g, "").trim();
+                if (outsideParentheses && isFuzzyMatch(userInput, outsideParentheses)) return true;
+                const insideParentheses = (title.match(/\((.*?)\)/) || [])[1];
+                if (insideParentheses && isFuzzyMatch(userInput, insideParentheses)) return true;
+            }
+            return false;
+        }
+
+        function gradeArtist(userInput, correctArtists) {
+            if (!userInput) return false;
+            const userCleaned = cleanString(userInput);
+
+            for (let artist of correctArtists) {
+                const targetCleaned = cleanString(artist);
+                if (isFuzzyMatch(userInput, artist)) return true;
+
+                const separateArtists = targetCleaned.split(/\s+and\s+|\s*,\s*/);
+                if (separateArtists.length > 1) {
+                    for (let sa of separateArtists) {
+                        if (userCleaned.includes(sa.trim()) && sa.trim().length > 2) return true;
+                    }
+                }
+                if (targetCleaned.includes("ft")) {
+                    const mainArtistPart = targetCleaned.split(/\s+ft\.?\s+|\s+feat\.?\s+/)[0].trim();
+                    if (userCleaned.includes(mainArtistPart)) return true;
+                }
+                if (userCleaned.includes(targetCleaned) || targetCleaned.includes(userCleaned)) {
+                    if (userCleaned.length >= Math.min(4, targetCleaned.length)) return true; 
+                }
+            }
+            return false;
+        }
+
+        // --- 5. AUDIO CONTROLS & SELECTION ---
+        function initAudioAnalyzer() {
+            if (audioCtx) return;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256;
+                source = audioCtx.createMediaElementSource(audioPlayer);
+                source.connect(analyser);
+                analyser.connect(audioCtx.destination);
+            } catch (e) {
+                console.error("Web Audio API blocked:", e);
+            }
+        }
+
+        function isSoundPlaying() {
+            if (!analyser) return true;
+            let dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+            return (dataArray.reduce((a, b) => a + b, 0) / dataArray.length) > 10;
+        }
+
+        function updatePlayButtonUI() {
+            if (playCount >= 2) {
+                playBtn.disabled = true;
+                playIcon.className = "fas fa-lock text-slate-400";
+                playLimitLbl.innerText = "Locked (0 plays remaining)";
+            } else {
+                playBtn.disabled = false;
+                playIcon.className = "fas fa-play ml-0.5 text-slate-900";
+                playLimitLbl.innerText = `Played ${playCount} of 2 times`;
+            }
+        }
+
+        function runPlaybackSimulation() {
+            if (playCount >= 2 || isPlaying || !currentSong) return;
+
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            } else {
+                initAudioAnalyzer();
+            }
+
+            isPlaying = true;
+            playCount++;
+            updatePlayButtonUI();
+
+            playBtn.disabled = true;
+            playIcon.className = "fas fa-volume-up text-slate-900 animate-pulse";
+            progressContainer.classList.remove('opacity-0');
+            timerDisplay.classList.remove('hidden');
+            timerDisplay.innerText = "Skipping silence...";
+            
+            const totalDuration = 15;
+            let secondsElapsed = 0;
+            let soundDetected = false;
+
+            audioPlayer.currentTime = 0;
+            audioPlayer.play().catch(err => console.warn(err));
+
+            playbackInterval = setInterval(() => {
+                if (!soundDetected) {
+                    if (isSoundPlaying() && audioPlayer.currentTime > 0) {
+                        soundDetected = true;
+                    } else {
+                        if (audioPlayer.currentTime > 4) soundDetected = true;
+                        return;
+                    }
+                }
+
+                secondsElapsed += 0.1;
+                progressBar.style.width = `${(secondsElapsed / totalDuration) * 100}%`;
+                timerDisplay.innerText = `${Math.max(0, (totalDuration - secondsElapsed)).toFixed(1)}s`;
+
+                if (secondsElapsed >= totalDuration) {
+                    stopPlaybackSimulation();
+                }
+            }, 100);
+        }
+
+        function stopPlaybackSimulation() {
+            audioPlayer.pause();
+            clearInterval(playbackInterval);
+            isPlaying = false;
+            progressBar.style.width = '0%';
+            progressContainer.classList.add('opacity-0');
+            timerDisplay.classList.add('hidden');
+        }
+
+        // --- 6. INSTANT EVALUATION ENGINE ---
+        function submitAnswer() {
+            // Kill any active sounds instantly
+            stopPlaybackSimulation();
+            
+            const userArtist = inputArtist.value;
+            const userTitle = inputTitle.value;
+            
+            const isArtistCorrect = gradeArtist(userArtist, currentSong.correctArtists);
+            const isTitleCorrect = gradeTitle(userTitle, currentSong.correctTitles);
+            
+            // Render explicit feedback metrics inside card
+            feedbackDrawer.innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div class="p-2.5 rounded-lg ${isArtistCorrect ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-rose-50 border border-rose-200 text-rose-900'}">
+                        <p class="font-bold text-slate-500 mb-1">Artist / Band</p>
+                        <p class="truncate mb-0.5">Your Answer: <span class="${userArtist ? 'font-bold' : 'italic text-slate-400'}">${userArtist || "[Left Blank]"}</span></p>
+                        <p class="text-slate-500">Accepted: <strong class="text-slate-800">${currentSong.correctArtists[0]}</strong></p>
+                    </div>
+                    <div class="p-2.5 rounded-lg ${isTitleCorrect ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-rose-50 border border-rose-200 text-rose-900'}">
+                        <p class="font-bold text-slate-500 mb-1">Song Title</p>
+                        <p class="truncate mb-0.5">Your Answer: <span class="${userTitle ? 'font-bold' : 'italic text-slate-400'}">${userTitle || "[Left Blank]"}</span></p>
+                        <p class="text-slate-500">Accepted: <strong class="text-slate-800">${currentSong.correctTitles[0]}</strong></p>
+                    </div>
+                </div>
+            `;
+            feedbackDrawer.classList.remove('hidden');
+            
+            // Completely lock user interactives for review state
+            inputArtist.disabled = true;
+            inputTitle.disabled = true;
+            playBtn.disabled = true;
+            playLimitLbl.innerText = "Review your results below.";
+            
+            // Swap button configuration entirely
+            submitBtn.classList.add('hidden');
+            nextBtn.classList.remove('hidden');
+        }
+
+        // --- 7. EVENT ACTION BINDINGS ---
+        playBtn.addEventListener('click', runPlaybackSimulation);
+        submitBtn.addEventListener('click', submitAnswer);
+        nextBtn.addEventListener('click', loadNextEndlessTrack);
+
+        loadNextEndlessTrack();
+    </script>
+</body>
+</html>
