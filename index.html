@@ -47,6 +47,11 @@
                     <p class="text-[10px] text-amber-700 font-bold tracking-widest uppercase -mt-1">Endless Practice Mode</p>
                 </div>
             </div>
+            <!-- Dynamic Streak Counter HUD -->
+            <div class="flex items-center space-x-2 bg-slate-900/5 px-3 py-1.5 rounded-xl border border-[#EFE9B0]">
+                <i class="fas fa-fire text-amber-600 text-xs animate-pulse"></i>
+                <span id="streak-counter" class="text-xs font-black tracking-wider text-slate-700 tabular-nums">STREAK: 0</span>
+            </div>
         </div>
     </header>
 
@@ -98,7 +103,6 @@
 
                 <!-- NAVIGATION / SUBMISSION CONTROLLER FOOTER -->
                 <div class="flex items-center justify-end gap-4 pt-6 mt-6 border-t border-[#EFE9B0]">
-                    <!-- Separate action buttons to prevent click bubbling/mismatches -->
                     <button id="submit-btn" disabled class="px-6 py-3 rounded-xl bg-amber-600 text-white font-black text-xs uppercase tracking-wider flex items-center space-x-2 transition-all hover:bg-amber-500 shadow-lg shadow-amber-600/10 disabled:opacity-40 disabled:pointer-events-none">
                         <span>Submit Answer</span>
                         <i class="fas fa-check-circle text-xs"></i>
@@ -123,6 +127,7 @@
         let isPlaying = false;
         let playCount = 0;
         let playbackInterval = null;
+        let currentStreak = 0;
 
         let artistHistoryQueue = [];
         const HISTORY_LIMIT = 20; 
@@ -161,18 +166,17 @@
         const submitBtn = document.getElementById('submit-btn');
         const nextBtn = document.getElementById('next-btn');
         const feedbackDrawer = document.getElementById('feedback-drawer');
+        const streakCounter = document.getElementById('streak-counter');
 
         // --- 3. ENDLESS STREAM DISCOVERY PARSER ---
         function loadNextEndlessTrack() {
             stopPlaybackSimulation();
             
-            // Reset input form elements
             inputTitle.value = "";
             inputArtist.value = "";
             inputTitle.disabled = false;
             inputArtist.disabled = false;
             
-            // Reset state toggles
             feedbackDrawer.classList.add('hidden');
             feedbackDrawer.innerHTML = "";
             
@@ -180,7 +184,6 @@
             playIcon.className = "fas fa-spinner fa-spin text-slate-900 text-2xl";
             playLimitLbl.innerText = "Sourcing fresh track asset...";
             
-            // Visibility setups
             submitBtn.classList.remove('hidden');
             submitBtn.disabled = true;
             nextBtn.classList.add('hidden');
@@ -418,7 +421,6 @@
 
         // --- 6. INSTANT EVALUATION ENGINE ---
         function submitAnswer() {
-            // Kill any active sounds instantly
             stopPlaybackSimulation();
             
             const userArtist = inputArtist.value;
@@ -427,7 +429,16 @@
             const isArtistCorrect = gradeArtist(userArtist, currentSong.correctArtists);
             const isTitleCorrect = gradeTitle(userTitle, currentSong.correctTitles);
             
-            // Render explicit feedback metrics inside card
+            // Streak Check logic: Must score BOTH true to increment, else drops to 0
+            if (isArtistCorrect && isTitleCorrect) {
+                currentStreak++;
+            } else {
+                currentStreak = 0;
+            }
+            
+            // Refresh Header UI Node
+            streakCounter.innerText = `STREAK: ${currentStreak}`;
+            
             feedbackDrawer.innerHTML = `
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div class="p-2.5 rounded-lg ${isArtistCorrect ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-rose-50 border border-rose-200 text-rose-900'}">
@@ -444,13 +455,11 @@
             `;
             feedbackDrawer.classList.remove('hidden');
             
-            // Completely lock user interactives for review state
             inputArtist.disabled = true;
             inputTitle.disabled = true;
             playBtn.disabled = true;
             playLimitLbl.innerText = "Review your results below.";
             
-            // Swap button configuration entirely
             submitBtn.classList.add('hidden');
             nextBtn.classList.remove('hidden');
         }
