@@ -69,9 +69,6 @@
                     </button>
                     
                     <div class="space-y-1">
-                        <span id="play-limit-lbl" class="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                            Loading stream assets...
-                        </span>
                         <div id="timer-display" class="hidden text-sm font-black brand-gold-text tabular-nums tracking-wide"></div>
                     </div>
 
@@ -102,15 +99,20 @@
                 </div>
 
                 <!-- NAVIGATION / SUBMISSION CONTROLLER FOOTER -->
-                <div class="flex items-center justify-end gap-4 pt-6 mt-6 border-t border-[#EFE9B0]">
-                    <button id="submit-btn" disabled class="px-6 py-3 rounded-xl bg-amber-600 text-white font-black text-xs uppercase tracking-wider flex items-center space-x-2 transition-all hover:bg-amber-500 shadow-lg shadow-amber-600/10 disabled:opacity-40 disabled:pointer-events-none">
-                        <span>Submit Answer</span>
-                        <i class="fas fa-check-circle text-xs"></i>
-                    </button>
-                    <button id="next-btn" class="hidden px-6 py-3 rounded-xl bg-slate-800 text-white font-black text-xs uppercase tracking-wider flex items-center space-x-2 transition-all hover:bg-slate-700 shadow-lg shadow-slate-900/10">
-                        <span>Next Song</span>
-                        <i class="fas fa-chevron-right text-xs"></i>
-                    </button>
+                <div class="pt-6 mt-6 border-t border-[#EFE9B0]">
+                    <p class="text-[10px] text-slate-400 italic text-center mb-4 uppercase tracking-widest">
+                        Getting only the artist or song title results in a 50% streak penalty
+                    </p>
+                    <div class="flex items-center justify-end gap-4">
+                        <button id="submit-btn" disabled class="px-6 py-3 rounded-xl bg-amber-600 text-white font-black text-xs uppercase tracking-wider flex items-center space-x-2 transition-all hover:bg-amber-500 shadow-lg shadow-amber-600/10 disabled:opacity-40 disabled:pointer-events-none">
+                            <span>Submit Answer</span>
+                            <i class="fas fa-check-circle text-xs"></i>
+                        </button>
+                        <button id="next-btn" class="hidden px-6 py-3 rounded-xl bg-slate-800 text-white font-black text-xs uppercase tracking-wider flex items-center space-x-2 transition-all hover:bg-slate-700 shadow-lg shadow-slate-900/10">
+                            <span>Next Song</span>
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -125,7 +127,6 @@
         // --- 1. STATE MANAGEMENT ---
         let currentSong = null;
         let isPlaying = false;
-        let playCount = 0;
         let playbackInterval = null;
         let currentStreak = 0;
 
@@ -157,7 +158,6 @@
         const audioPlayer = document.getElementById('audio-player');
         const playBtn = document.getElementById('play-btn');
         const playIcon = document.getElementById('play-icon');
-        const playLimitLbl = document.getElementById('play-limit-lbl');
         const timerDisplay = document.getElementById('timer-display');
         const progressBar = document.getElementById('progress-bar');
         const progressContainer = document.getElementById('progress-container');
@@ -182,14 +182,11 @@
             
             playBtn.disabled = true;
             playIcon.className = "fas fa-spinner fa-spin text-slate-900 text-2xl";
-            playLimitLbl.innerText = "Sourcing fresh track asset...";
             
             submitBtn.classList.remove('hidden');
             submitBtn.disabled = true;
             nextBtn.classList.add('hidden');
             
-            playCount = 0;
-
             let viablePool = eliteTriviaPool.filter(a => !artistHistoryQueue.includes(a));
             if (viablePool.length === 0) {
                 artistHistoryQueue = []; 
@@ -353,19 +350,12 @@
         }
 
         function updatePlayButtonUI() {
-            if (playCount >= 2) {
-                playBtn.disabled = true;
-                playIcon.className = "fas fa-lock text-slate-400";
-                playLimitLbl.innerText = "Locked (0 plays remaining)";
-            } else {
-                playBtn.disabled = false;
-                playIcon.className = "fas fa-play ml-0.5 text-slate-900";
-                playLimitLbl.innerText = `Played ${playCount} of 2 times`;
-            }
+            playBtn.disabled = false;
+            playIcon.className = "fas fa-play ml-0.5 text-slate-900";
         }
 
         function runPlaybackSimulation() {
-            if (playCount >= 2 || isPlaying || !currentSong) return;
+            if (isPlaying || !currentSong) return;
 
             if (audioCtx && audioCtx.state === 'suspended') {
                 audioCtx.resume();
@@ -374,8 +364,6 @@
             }
 
             isPlaying = true;
-            playCount++;
-            updatePlayButtonUI();
 
             playBtn.disabled = true;
             playIcon.className = "fas fa-volume-up text-slate-900 animate-pulse";
@@ -417,6 +405,9 @@
             progressBar.style.width = '0%';
             progressContainer.classList.add('opacity-0');
             timerDisplay.classList.add('hidden');
+            // Re-enable play button
+            playBtn.disabled = false;
+            playIcon.className = "fas fa-play ml-0.5 text-slate-900";
         }
 
         // --- 6. INSTANT EVALUATION ENGINE ---
@@ -429,14 +420,17 @@
             const isArtistCorrect = gradeArtist(userArtist, currentSong.correctArtists);
             const isTitleCorrect = gradeTitle(userTitle, currentSong.correctTitles);
             
-            // Streak Check logic: Must score BOTH true to increment, else drops to 0
+            // Logic: Increment streak if both correct. 
+            // Else, if one correct, streak = max(1, Math.floor(streak / 2)).
+            // Else, reset to 0.
             if (isArtistCorrect && isTitleCorrect) {
                 currentStreak++;
+            } else if (isArtistCorrect || isTitleCorrect) {
+                currentStreak = Math.max(1, Math.floor(currentStreak / 2));
             } else {
                 currentStreak = 0;
             }
             
-            // Refresh Header UI Node
             streakCounter.innerText = `STREAK: ${currentStreak}`;
             
             feedbackDrawer.innerHTML = `
@@ -458,7 +452,6 @@
             inputArtist.disabled = true;
             inputTitle.disabled = true;
             playBtn.disabled = true;
-            playLimitLbl.innerText = "Review your results below.";
             
             submitBtn.classList.add('hidden');
             nextBtn.classList.remove('hidden');
